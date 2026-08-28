@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lux Leasing - Sistema de Monitoreo de Activos Urbanos</title>
+    <!-- Google Fonts: Space Grotesk, JetBrains Mono & IBM Plex Mono -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Tailwind CSS v4 -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script type="text/tailwindcss">
+@custom-variant dark (&:where(.dark, .dark *));
+</script>
+    <!-- Maplibre GL JS CSS -->
+    <link href="https://unpkg.com/maplibre-gl@4.7.0/dist/maplibre-gl.css" rel="stylesheet" />
+    <style>
+        body {
+            font-family: var(--sans);
+            letter-spacing: 0.03em;
+        }
+        .kpi-number {
+            font-family: 'JetBrains Mono', 'IBM Plex Mono', monospace;
+            letter-spacing: 0em;
+        }
+        .dark .maplibregl-popup-content {
+            background: #051c63  !important;
+            color: #e7edf3 !important;
+            border: 1px solid #0b2c82;
+        }
+        .dark .maplibregl-popup-anchor-top .maplibregl-popup-tip {
+            border-bottom-color: #040d3d !important;
+        }
+        html:not(.dark) .maplibregl-popup-content {
+            background: #ffffff !important;
+            color: #020410 !important;
+            border: 1px solid #e7edf3;
+        }
+        html:not(.dark) .maplibregl-popup-anchor-top .maplibregl-popup-tip {
+            border-bottom-color: #ffffff !important;
+        }
+
+
+
+
+        /* Ajustes para el Pop-up de Solicitudes */
+.maplibregl-popup-content {
+    padding: 0 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+    overflow: hidden;
+}
+
+.dark .maplibregl-popup-content {
+    background: #090d16 !important;
+    border: 1px solid #1e293b !important;
+    color: #f8fafc !important;
+}
+
+.dark .maplibregl-popup-content p {
+    background: #0f172a !important;
+    color: #e2e8f0 !important;
+    border-color: #1e293b !important;
+}
+
+.dark .maplibregl-popup-content div[style*="background-color: #f1f5f9"] {
+    background-color: #0f172a !important;
+}
+
+.dark .maplibregl-popup-anchor-top .maplibregl-popup-tip {
+    border-bottom-color: #090d16 !important;
+}
+
+.dark .maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
+    border-top-color: #090d16 !important;
+}
+    </style>
+    
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<!-- MapLibre GL Draw (Herramientas de dibujo) -->
+<script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.js"></script>
+<link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.3/mapbox-gl-draw.css" type="text/css">
+
+
+<base target="_blank">
+</head>
+<body class="bg-slate-50 dark:bg-[#030712] text-slate-900 dark:text-slate-100 font-sans h-screen flex flex-col overflow-hidden transition-colors duration-300">
+
+<!-- HEADER PRINCIPAL -->
+<header class="bg-slate-800 border-b border-slate-800 px-3 pt-2 pb-3 shadow-lg z-20 w-full flex flex-col items-center relative transition-colors duration-300">
+
+    <!-- Contenedor superior con Logos, Título y Controles -->
+    <div class="w-full flex justify-between items-center border-b border-slate-800 pb-2 mb-2">
+        
+        <!-- Contenedor para los logos sin recuadro a la izquierda con separador y enlaces -->
+        <div class="flex items-center gap-2">
+            <a href="https://www.luxleasing.com.ar/" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center overflow-hidden py-1">
+                <img src="logo_lux_byn.png" alt="Logo Lux" class="h-10 w-auto object-contain opacity-70 hover:opacity-100 transition-opacity scale-110" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                <span class="hidden text-xs text-slate-400">Logo 1</span>
+            </a>
+            
+            <!-- Línea separadora vertical -->
+            <div class="h-6 w-[1px] bg-slate-400/80 mx-1"></div>
+
+            <a href="https://rivadaviamendoza.gob.ar/new/" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center overflow-hidden">
+                <img src="logo_tupungato.png" alt="Logo Rivadavia" class="h-7 w-auto object-contain opacity-70 hover:opacity-100 transition-opacity" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                <span class="hidden text-xs text-slate-400">Logo 2</span>
+            </a>
+        </div>
+
+        <!-- Título con Space Grotesk, sin mayúsculas y tracking leve -->
+        <h1 class="text-[14px] font-medium text-slate-200 tracking-[0.03em] text-center" style="font-family: var(--disp);">
+            Sistema de Monitoreo de Activos Urbanos <span class="text-slate-400 mx-2">•</span> Municipio de Tupungato
+        </h1>
+        
+        <!-- Selectores de Mapa Base, Tema y Fecha -->
+        <div class="relative flex items-center gap-2">
+            <select id="map-style-select" class="bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs py-1 px-2.5 focus:outline-none text-slate-800 dark:text-slate-200 font-medium cursor-pointer">
+                <option value="osm" selected>OSM (Tema Claro)</option>
+                <option value="dark">CartoDB Oscuro (Tema Oscuro)</option>
+                <option value="satellite">Satélite (ArcGIS)</option>
+                <option value="argenmap">Argenmap (IGN)</option>
+            </select>
+
+            <button id="theme-toggle" class="p-1.5 rounded-lg border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors cursor-pointer text-sm flex items-center justify-center min-w-[36px]">
+                <span id="theme-icon-light">☀️</span>
+                <span id="theme-icon-dark" class="hidden">🌙</span>
+            </button>
+
+            <div class="absolute right-0 top-full mt-0.5 text-[9.5px] text-slate-300 font-mono whitespace-nowrap pointer-events-none">
+                Fecha actualizacion: <span id="fecha-ultima-actualizacion">Cargando...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- BOTONES MODULARES (ACTIVAN CAPAS) - Fondo neutro y ancho   -->
+    <div class="flex flex-wrap items-center justify-center gap-3 w-full max-w-7xl">
+
+        <!-- MÓDULO: TODOS -->
+        <button id="btn-mod-todos" class="group flex items-center justify-center gap-2 px-4 h-[48px] w-[145px] rounded-lg transition-all cursor-pointer border border-slate-700/60 bg-slate-800/40 hover:bg-slate-800 hover:border-slate-600 box-border tracking-[0.03em]">
+            <div class="text-slate-400 group-hover:text-slate-200 transition-colors">
+                <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
+            </div>
+            <span class="text-[10px] font-bold uppercase tracking-[0.06em] text-slate-300 group-hover:text-white">Todas</span>
+        </button>
+
+        <!-- MÓDULO: LUMINARIAS -->
+        <div class="relative group/drop">
+            <button id="btn-mod-luminarias" class="group flex items-center gap-2 px-3 h-[48px] w-[145px] rounded-lg border border-slate-700/60 bg-slate-800/40 hover:bg-slate-800 hover:border-slate-600 transition-all cursor-pointer box-border">
+                <div class="text-slate-400 shrink-0">
+                    <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8 21h8M12 3a7 7 0 00-7 7c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1.26c1.81-1.27 3-3.36 3-5.74a7 7 0 00-7-7z"></path>
+                    </svg>
+                </div>
+                <div class="flex-1 text-center flex flex-col justify-center">
+                    <span id="kpi-total" class="kpi-number text-lg font-bold text-white leading-none">0</span>
+                    <span class="text-[9.5px] font-semibold uppercase tracking-[0.08em] text-slate-400 leading-tight mt-1">Luminarias</span>
+                </div>
+            </button>
+            
+            <div id="drop-luminarias" class="dropdown-content absolute top-full left-1/2 -translate-x-1/2 mt-1.5 w-52 bg-white dark:bg-[#0b1528] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-3 hidden group-hover/drop:block z-50 backdrop-blur-md">
+                <h3 class="text-[9px] font-bold text-slate-200 dark:text-slate-300 uppercase tracking-widest mb-2 border-b border-slate-100 dark:border-slate-800 pb-1">Tecnología</h3>
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="flex items-center gap-1.5 text-slate-700 dark:text-slate-300"><span class="w-2 h-2 rounded-full bg-cyan-400"></span> LED</span>
+                        <span id="kpi-led" class="font-bold font-mono text-cyan-600 dark:text-cyan-400">0%</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="flex items-center gap-1.5 text-slate-700 dark:text-slate-300"><span class="w-2 h-2 rounded-full bg-oklch-400"></span> SODIO</span>
+                        <span id="kpi-sodio" class="font-bold font-mono text-orange-500 dark:text-orange-400">0%</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="flex items-center gap-1.5 text-slate-700 dark:text-slate-300"><span class="w-2 h-2 rounded-full bg-slate-400"></span> Otros</span>
+                        <span id="kpi-lum-otros" class="font-bold font-mono text-slate-500 dark:text-slate-400">0%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MÓDULO: ARBOLADO 
+        <div class="relative group/drop">
+            <button id="btn-mod-arbolado" class="group flex items-center gap-2 px-3 h-[48px] w-[145px] rounded-lg border border-slate-700/60 bg-slate-800/40 hover:bg-slate-800 hover:border-slate-600 transition-all cursor-pointer box-border">
+                <div class="text-slate-400 shrink-0">
+                    <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v18M12 7l4 4M12 9l6 5M12 5l-4 4M12 8l-6 5"></path></svg>
+                </div>
+                <div class="flex-1 text-center flex flex-col justify-center">
+                    <span id="kpi-arb-total" class="kpi-number text-lg font-bold text-white leading-none">0</span>
+                    <span class="text-[9.5px] font-bold uppercase tracking-[0.08em] text-slate-400 leading-tight mt-1">Árboles</span>
+                </div>
+            </button>
+            
+            <div id="drop-arbolado" class="dropdown-content absolute top-full left-1/2 -translate-x-1/2 mt-1.5 w-52 bg-white dark:bg-[#0b1528] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-3 hidden group-hover/drop:block z-50 backdrop-blur-md">
+                <h3 class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 border-b border-slate-100 dark:border-slate-800 pb-1">Estado Forestal</h3>
+                <div class="space-y-1.5 text-xs">
+                    <div class="flex justify-between items-center"><span class="flex items-center gap-1.5 text-slate-600 dark:text-slate-300"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Bueno</span><span id="kpi-arb-bueno" class="font-bold text-emerald-500">0</span></div>
+                    <div class="flex justify-between items-center"><span class="flex items-center gap-1.5 text-slate-600 dark:text-slate-300"><span class="w-1.5 h-1.5 rounded-full bg-yellow-400"></span> Regular</span><span id="kpi-arb-regular" class="font-bold text-yellow-500">0</span></div>
+                    <div class="flex justify-between items-center"><span class="flex items-center gap-1.5 text-slate-600 dark:text-slate-300"><span class="w-1.5 h-1.5 rounded-full bg-red-400"></span> Malo</span><span id="kpi-arb-malo" class="font-bold text-red-500">0</span></div>
+                    <div class="flex justify-between items-center"><span class="flex items-center gap-1.5 text-slate-600 dark:text-slate-300"><span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span> Otros</span><span id="kpi-arb-otros" class="font-bold text-slate-500">0</span></div>
+                </div>
+            </div>
+        </div> -->
+
+<!-- MÓDULO: VIALIDADES -->
+<div class="relative group/drop">
+    <button id="btn-mod-vialidades" class="group flex items-center gap-2 px-3 h-[48px] w-[145px] rounded-lg border border-slate-700/60 bg-slate-800/40 hover:bg-slate-800 hover:border-slate-600 transition-all cursor-pointer box-border">
+        <div class="text-slate-400 shrink-0">
+            <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+        </div>
+        <div class="flex-1 text-center flex flex-col justify-center">
+            <span id="kpi-vial-total" class="kpi-number text-lg font-bold text-white leading-none">0</span>
+            <span class="text-[9.5px] font-bold uppercase tracking-[0.08em] text-slate-400 leading-tight mt-1">Km Viales</span>
+        </div>
+    </button>
+    
+    <div id="drop-vialidades" class="dropdown-content absolute top-full left-1/2 -translate-x-1/2 mt-1.5 w-52 bg-white dark:bg-[#0b1528] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-3 hidden group-hover/drop:block z-50 backdrop-blur-md">
+        <h3 class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 border-b border-slate-100 dark:border-slate-800 pb-1">Distribución Km</h3>
+        <div class="space-y-2 text-xs">
+            <div class="flex justify-between items-center"><span class="flex items-center gap-1.5 text-slate-700 dark:text-slate-300"><span class="w-2 h-2 rounded-full bg-blue-500"></span> Pavimentada</span><span id="kpi-vial-pav" class="font-bold font-mono text-blue-500">0</span></div>
+            <div class="flex justify-between items-center"><span class="flex items-center gap-1.5 text-slate-700 dark:text-slate-300"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Consolidada</span><span id="kpi-vial-cons" class="font-bold font-mono text-emerald-500">0</span></div>
+            <div class="flex justify-between items-center"><span class="flex items-center gap-1.5 text-slate-700 dark:text-slate-300"><span class="w-2 h-2 rounded-full bg-amber-600"></span> Tierra</span><span id="kpi-vial-tierra" class="font-bold font-mono text-amber-600">0</span></div>
+            <div class="flex justify-between items-center"><span class="flex items-center gap-1.5 text-slate-700 dark:text-slate-300"><span class="w-2 h-2 rounded-full bg-slate-500"></span> Sin dato</span><span id="kpi-vial-sd" class="font-bold font-mono text-slate-500">0</span></div>
+        </div>
+    </div>
+</div>
+        <!-- MÓDULO: LATERAL VIAL 
+        <div class="relative group/drop">
+            <button id="btn-mod-cordon" class="group flex items-center gap-2 px-3 h-[48px] w-[145px] rounded-lg border border-slate-700/60 bg-slate-800/40 hover:bg-slate-800 hover:border-slate-600 transition-all cursor-pointer box-border">
+                <div class="text-slate-400 shrink-0">
+                    <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 4H5m14-8H5M3 7h18M3 17h18"></path></svg>
+                </div>
+                <div class="flex-1 text-center flex flex-col justify-center">
+                    <span id="kpi-cordon-total" class="kpi-number text-lg font-bold text-white leading-none">0</span>
+                    <span class="text-[9.5px] font-bold uppercase tracking-[0.08em] text-slate-400 leading-tight mt-1">Lateral Vial</span>
+                </div>
+            </button>
+            <div id="drop-cordon" class="dropdown-content absolute top-full left-1/2 -translate-x-1/2 mt-1.5 w-56 bg-white dark:bg-[#0b1528] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-3 hidden group-hover/drop:block z-50 backdrop-blur-md">
+                <h3 class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 border-b border-slate-100 dark:border-slate-800 pb-1">Kilómetros Relevados</h3>
+                <div class="space-y-2 text-xs text-slate-700 dark:text-slate-300">
+                    <div class="flex justify-between items-center"><span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>Cordón</span><span id="kpi-cordon-con" class="font-bold font-mono text-amber-500">0</span></div>
+                    <div class="border-t border-slate-100 dark:border-slate-800 my-1"></div>
+                    <div class="flex justify-between items-center"><span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>Banquina/Vereda</span><span id="kpi-banquina-con" class="font-bold font-mono text-emerald-500">0</span></div>
+                    <div class="border-t border-slate-100 dark:border-slate-800 my-1"></div>
+                    <div class="flex justify-between items-center"><span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>Cuneta</span><span id="kpi-cuneta-con" class="font-bold font-mono text-cyan-500">0</span></div>
+                </div>
+            </div>
+           
+        </div> -->
+
+        <!-- MÓDULO: SOLICITUDES 
+        <div class="relative group/drop">
+            <button id="btn-mod-reclamos" class="group flex items-center gap-2 px-3 h-[48px] w-[145px] rounded-lg border border-slate-700/60 bg-slate-800/40 hover:bg-slate-800 hover:border-slate-600 transition-all cursor-pointer box-border">
+                <div class="text-slate-400 shrink-0 animate-pulse">
+                    <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                </div>
+                <div class="flex-1 text-center flex flex-col justify-center">
+                    <span id="kpi-rec-total" class="kpi-number text-lg font-bold text-white leading-none">0</span>
+                    <span class="text-[9.5px] font-bold uppercase tracking-[0.08em] text-slate-400 leading-tight mt-1">Solicitudes</span>
+                </div>
+            </button>
+            
+            <div id="drop-reclamos" class="dropdown-content absolute top-full right-0 mt-1.5 w-64 bg-slate-950/80 backdrop-blur-xl border border-red-500/15 rounded-xl shadow-2xl p-3 hidden group-hover/drop:block z-50">
+                <h3 class="text-[10px] font-bold text-red-400 uppercase tracking-wider mb-2 border-b border-red-500/20 pb-1.5 flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse"></span>
+                    Solicitudes por Tipo
+                </h3>
+                <div class="space-y-1.5 text-xs">
+                    <div class="flex justify-between items-center p-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
+                        <span class="flex items-center gap-2 text-slate-300"><span class="w-1.5 h-1.5 rounded-full bg-red-400"></span> Infraestructura</span>
+                        <span id="kpi-rec-infra" class="font-bold font-mono text-red-400">0</span>
+                    </div>
+                    <div class="flex justify-between items-center p-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
+                        <span class="flex items-center gap-2 text-slate-300"><span class="w-1.5 h-1.5 rounded-full bg-orange-400"></span> Mantenimiento Op.</span>
+                        <span id="kpi-rec-mant" class="font-bold font-mono text-orange-400">0</span>
+                    </div>
+                    <div class="flex justify-between items-center p-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
+                        <span class="flex items-center gap-2 text-slate-300"><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Obra / Extensión</span>
+                        <span id="kpi-rec-obra" class="font-bold font-mono text-amber-400">0</span>
+                    </div>
+                    <div class="flex justify-between items-center p-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
+                        <span class="flex items-center gap-2 text-slate-300"><span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span> Reconversión LED</span>
+                        <span id="kpi-rec-led" class="font-bold font-mono text-rose-400">0</span>
+                    </div>
+                    <div class="flex justify-between items-center p-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
+                        <span class="flex items-center gap-2 text-slate-300"><span class="w-1.5 h-1.5 rounded-full bg-pink-400"></span> Reparación / Rep.</span>
+                        <span id="kpi-rec-rep" class="font-bold font-mono text-pink-400">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="h-6 w-[1px] bg-slate-200 dark:bg-slate-800 mx-1"></div> -->
+
+        <!-- FILTRO BARRIOS O DISTRITOS- VER -->
+          <div class="flex items-center gap-2">
+            <select id="filtro-distrito" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs py-1.5 px-3 h-[48px] focus:outline-none text-slate-700 dark:text-slate-300 font-bold uppercase tracking-[0.03em] cursor-pointer min-w-[160px]">
+                <option value="Todos">Distrito</option>
+            </select>
+            <button id="btn-stats" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg h-[48px] w-[48px] flex items-center justify-center text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer" title="Estadísticas">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+            </button>
+        </div>
+
+
+    </div>
+</header>
+
+<!-- CUERPO PRINCIPAL -->
+<div class="flex flex-1 overflow-hidden relative w-full"> <!-- [CORREGIDO] Eliminado div anidado duplicado -->
+    
+<!-- FICHA LATERAL IZQUIERDA EN TONOS CLAROS -->
+<aside class="w-80 bg-slate-100 border-r border-slate-200 flex flex-col h-full shadow-lg z-10 transition-colors duration-300">
+
+
+    
+<!-- Contenedor Street View Embebido (gris suave) -->
+<div class="w-full h-64 bg-slate-200 dark:bg-slate-100 relative transition-colors duration-300">
+    <!-- Frame  -->
+    <iframe id="street-view-frame" class="w-full h-full hidden" frameborder="0" allowfullscreen></iframe>
+    
+    <!-- ST VIEW con fondo gris y texto oscuro  -->
+<div id="sv-placeholder" class="absolute inset-0 bg-slate-300 flex flex-col items-center justify-center text-center p-4">
+
+    <svg xmlns="http://www.w3.org/2000/svg"
+         class="w-12 h-12 text-slate-500 mb-3"
+         fill="none"
+         viewBox="0 0 24 24"
+         stroke="currentColor"
+         stroke-width="1.5">
+        <path stroke-linecap="round" stroke-linejoin="round"
+              d="M3 7.5A1.5 1.5 0 014.5 6h2.379a1.5 1.5 0 001.06-.44l.621-.62A1.5 1.5 0 019.621 4.5h4.758a1.5 1.5 0 011.06.44l.621.62A1.5 1.5 0 0017.121 6H19.5A1.5 1.5 0 0121 7.5v9A1.5 1.5 0 0119.5 18h-15A1.5 1.5 0 013 16.5v-9z"/>
+        <circle cx="12" cy="12" r="3.5"/>
+    </svg>
+
+    <span class="text-xs font-semibold text-slate-600 tracking-wide max-w-[180px]">
+        Seleccione un punto en el mapa para ver Google Street View
+    </span>
+
+</div>
+</div>
+    
+<!-- Campos de Información en Tonos Claros -->
+    <div class="p-4 flex-1 overflow-y-auto space-y-3">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200 pb-1">Ficha Técnica</h2>
+        
+        <!-- CONTENEDOR EN DOS COLUMNAS PARA CAMPOS PRINCIPALES -->
+        <div class="grid grid-cols-2 gap-x-2 gap-y-3">
+            <div>
+                <span class="text-[10px] text-slate-400 block uppercase tracking-wide">ID Elemento</span>
+                <span id="info-id" class="text-xs font-mono font-bold text-slate-700">-</span>
+            </div>
+            <div>
+                <span class="text-[10px] text-slate-400 block uppercase tracking-wide">Elemento</span>
+                <span id="info-elemento" class="text-xs font-medium text-slate-700">-</span>
+            </div>
+            <div>
+                <!-- Cambiado a ID para que cambie dinámicamente a "Especie" en árboles -->
+                <span id="label-tipo" class="text-[10px] text-slate-400 block uppercase tracking-wide">Tecnología</span>
+                <span id="info-tipo" class="text-xs font-medium text-slate-700">-</span>
+            </div>
+            <div>
+                <!-- Cambiado a ID para que cambie dinámicamente a "Dimensión" en árboles -->
+                <span id="label-potencia" class="text-[10px] text-slate-400 block uppercase tracking-wide">Potencia</span>
+                <span id="info-potencia" class="text-xs font-medium text-slate-700">-</span>
+            </div>
+            <div>
+                <!-- Cambiado a ID para que cambie dinámicamente a "Estado Vegetativo" en árboles -->
+                <span id="label-marca" class="text-[10px] text-slate-400 block uppercase tracking-wide">Marca</span>
+                <span id="info-marca" class="text-xs font-medium text-slate-700">-</span>
+            </div>
+            <div>
+                <span id="label-modelo" class="text-[10px] text-slate-400 block uppercase tracking-wide">Modelo</span>
+                <span id="info-modelo" class="text-xs font-medium text-slate-700">-</span>
+            </div>
+            <div>
+                <span class="text-[10px] text-slate-400 block uppercase tracking-wide">Calle</span>
+                <span id="info-calle" class="text-xs font-medium text-slate-700">-</span>
+            </div>
+            <div>
+                <span id="label-soporte" class="text-[10px] text-slate-400 block uppercase tracking-wide">Soporte</span>
+                <span id="info-soporte" class="text-xs font-medium text-slate-700">-</span>
+            </div>
+        </div>
+
+        <!-- OPCIÓN VER MÁS CAMPOS -->
+        <details class="pt-2">
+            <summary class="text-[10px] text-slate-400 uppercase tracking-wide cursor-pointer outline-none select-none hover:text-slate-600">Ver más campos</summary>
+            
+            <div class="mt-3 grid grid-cols-2 gap-x-2 gap-y-3">
+                <div>
+                    <!-- Cambiado a ID para que cambie dinámicamente a "Tronco" en árboles -->
+                    <span id="label-funcion" class="text-[10px] text-slate-400 block uppercase tracking-wide">Función</span>
+                    <span id="info-funcion" class="text-xs font-medium text-slate-700">-</span>
+                </div>
+                <div>
+                    <!-- Cambiado a ID para que cambie dinámicamente a "Base" en árboles -->
+                    <span id="label-brazo" class="text-[10px] text-slate-400 block uppercase tracking-wide">Brazo</span>
+                    <span id="info-brazo" class="text-xs font-medium text-slate-700">-</span>
+                </div>
+                <div>
+                    <!-- Cambiado a ID para que cambie dinámicamente a "F. Street View" en árboles -->
+                    <span id="label-streetview" class="text-[10px] text-slate-400 block uppercase tracking-wide">StreetView</span>
+                    <span id="info-streetview" class="text-xs font-medium text-slate-700">-</span>
+                </div>
+                <div>
+                    <span class="text-[10px] text-slate-400 block uppercase tracking-wide">Fecha_Act</span>
+                    <span id="info-fecha-act" class="text-xs font-medium text-slate-700">-</span>
+                </div>
+                
+                <div class="hidden">
+                    <span id="info-barrio"></span>
+                    <span id="info-linkstreetview"></span>
+                </div>
+            </div>
+        </details>
+   
+
+<!-- BOTONES DE ACCIÓN  -->
+<div class="pt-3 space-y-1.5">
+    <a id="btn-streetview" href="#" target="_blank" class="w-full bg-[#0f172a] hover:bg-[#1e293b] text-white text-[11px] font-medium py-1.5 px-3 rounded-lg shadow-sm transition-colors flex items-center justify-center gap-1.5 pointer-events-none opacity-40">
+        Abrir Panorámica 360°
+    </a>
+<button id="btn-export-pdf" class="w-full bg-slate-500 hover:bg-slate-600 text-white text-[11px] font-medium py-1.5 px-3 rounded-lg shadow-sm transition-colors cursor-pointer"> <!-- [CORREGIDO] hover:bg-slate-600 (antes era igual al bg base) -->
+        Exportar PDF 
+    </button>
+</div>
+    </div>
+</aside>
+    
+    <main class="flex-1 relative h-full">
+        <div id="map" class="w-full h-full bg-slate-100 dark:bg-slate-950"></div>
+    </main>
+    <!-- [CORREGIDO] Eliminado cierre de div anidado duplicado -->
+
+    <!-- PANEL DE ESTADÍSTICAS -->
+    <aside id="stats-panel" class="absolute right-0 top-0 h-full w-80 bg-white dark:bg-[#0b1528] border-l border-slate-200 dark:border-slate-800 shadow-2xl z-40 transform translate-x-full transition-transform duration-300 flex flex-col">
+        <div class="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800">
+            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-800 dark:text-slate-100">Estadísticas</h2>
+            <button id="btn-close-stats" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        <div id="stats-content" class="flex-1 overflow-y-auto p-4 space-y-6 text-xs text-slate-700 dark:text-slate-300"></div>
+    </aside>
+
+</div>  <!--  cierre  div PRINCIPAL -->
+
+<script src="https://unpkg.com/maplibre-gl@4.7.0/dist/maplibre-gl.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
