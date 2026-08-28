@@ -58,19 +58,16 @@ const map = new maplibregl.Map({
 
 
 // 1.1 Definición de la base de  GeoServer
-const geoServerBase = "http://localhost:8090/geoserver/visor_rivadavia/ows?service=WFS&version=1.0.0&request=GetFeature";
 
 // 1.2 Rutas origen de datos (GeoServer y archivos locales)
 const FUENTES_DATA = {
-    // Capa GeoServer (Espacio de trabajo: 'visor_rivadavia')
-    // arbolado: `${geoServerBase}&typeName=visor_rivadavia:arbolado_ej_2&outputFormat=application/json&srsName=EPSG:4326`,
-    
+ 
     // Capas locales .geojson
     luminarias: "./luminarias_tupungato_wgs44.geojson",
 
-    vialidades: "./vialidad_ej_4.geojson",
+    vialidades: "./vialidades_tupungato_wgs.geojson",
 
-    distritos: "./distritos_riv_ide.geojson"
+    distritos: "./distritos_tupungato_wgs.geojson"
 };
 
 // 1.3 Estructuras iniciales para control de estado y KPIs
@@ -287,35 +284,7 @@ map.on('click', 'reclamos-layer', (e) => {
 // 4. CARGAR CAPAS
 function inyectarFuentesYCapas() {
 
-    // --- 1. CORDÓN ---
-    if (!map.getSource('cordon-source')) {
-        map.addSource('cordon-source', { type: 'geojson', data: capasData.cordon });
-        map.addLayer({
-            id: 'cordon-layer', type: 'line', source: 'cordon-source',
-            paint: { 'line-color': '#f59e0b', 'line-width': 1.5 },
-            layout: { 'visibility': visibilidadCapas.cordon ? 'visible' : 'none', 'line-cap': 'round', 'line-join': 'round' }
-        });
-    }
 
-    // --- 2. BANQUINA / VEREDA ---
-    if (!map.getSource('banquina-vereda-source')) {
-        map.addSource('banquina-vereda-source', { type: 'geojson', data: capasData.banquina_vereda });
-        map.addLayer({
-            id: 'banquina-vereda-layer', type: 'line', source: 'banquina-vereda-source',
-            paint: { 'line-color': '#6c716f', 'line-width': 1.5 },
-            layout: { 'visibility': visibilidadCapas.banquina_vereda ? 'visible' : 'none', 'line-cap': 'round', 'line-join': 'round' }
-        });
-    }
-
-    // --- 3. CUNETA ---
-    if (!map.getSource('cuneta-source')) {
-        map.addSource('cuneta-source', { type: 'geojson', data: capasData.cuneta });
-        map.addLayer({
-            id: 'cuneta-layer', type: 'line', source: 'cuneta-source',
-            paint: { 'line-color': '#5162c7', 'line-width': 1.5 },
-            layout: { 'visibility': visibilidadCapas.cuneta ? 'visible' : 'none', 'line-cap': 'round', 'line-join': 'round' }
-        });
-    }
 
 
 // --- 4. Vialidades ('superficie') ---
@@ -368,15 +337,7 @@ if (!map.getSource('vialidades-source')) {
         });
     }
 
-    // --- 5. Reclamos ---
-    if (!map.getSource('reclamos-source')) {
-        map.addSource('reclamos-source', { type: 'geojson', data: capasData.reclamos });
-        map.addLayer({
-            id: 'reclamos-layer', type: 'circle', source: 'reclamos-source',
-            paint: { 'circle-color': '#ef4444', 'circle-radius': 7, 'circle-stroke-width': 1.5, 'circle-stroke-color': '#ffffff' },
-            layout: { 'visibility': visibilidadCapas.reclamos ? 'visible' : 'none' }
-        });
-    }
+  
 
 
 
